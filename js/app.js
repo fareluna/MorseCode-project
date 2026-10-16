@@ -11,6 +11,9 @@ function setMode(m) {
   el('out-title').textContent = m === 'enc' ? 'Output Morse' : 'Output Teks';
   el('lbl-char').textContent = m === 'enc' ? 'char' : 'token';
   el('lbl-emit').textContent = m === 'enc' ? 'Output' : 'Emit';
+  if (el('lbl-sigma')) {
+    el('lbl-sigma').textContent = m === 'enc' ? '{A-Z, 0-9, Simbol, Spasi}' : '{·, -, /, Spasi}';
+  }
   reset();
 }
 
@@ -21,16 +24,35 @@ function reset() {
   if (el('main-input')) el('main-input').value = '';
   document.querySelectorAll('.state-node').forEach(g => g.classList.remove('active', 'error'));
   el('q_idle')?.classList.add('active');
+  highlightTransition(null);
   if (el('main-tape')) el('main-tape').innerHTML = '';
   if (el('main-output')) el('main-output').textContent = '—';
   if (el('main-log')) el('main-log').innerHTML = '<span class="s-state">Siap.</span>';
 }
 
-async function fsmStep(s, err, msg, toks, aIdx, dSet, eIdx, spd, runId) {
+function highlightTransition(rowId, isError = false) {
+  document.querySelectorAll('#trans-table tbody tr').forEach(r => r.classList.remove('tr-active', 'tr-error'));
+  if (rowId) {
+    const row = el(rowId);
+    if (row) row.classList.add(isError ? 'tr-error' : 'tr-active');
+  }
+}
+
+function toggleTBOSection() {
+  const content = el('tbo-content');
+  const icon = el('tbo-toggle-icon');
+  if (!content) return;
+  const isHidden = content.style.display === 'none';
+  content.style.display = isHidden ? 'block' : 'none';
+  if (icon) icon.textContent = isHidden ? '▼' : '►';
+}
+
+async function fsmStep(s, err, msg, toks, aIdx, dSet, eIdx, spd, runId, trRowId) {
   if (runId !== currentRunId) return false;
   document.querySelectorAll('.state-node').forEach(g => g.classList.remove('active', 'error'));
   if (s) el(s)?.classList.add('active');
   if (err) el(err)?.classList.add('error');
+  highlightTransition(trRowId, Boolean(err));
   if (toks && el('main-tape')) {
     el('main-tape').innerHTML = toks.map((t, i) => 
       `<div class="tape-cell ${i===aIdx?'active':i===eIdx?'error':dSet.has(i)?'done':''}">${t===' '?'␣':t}</div>`
@@ -71,27 +93,27 @@ async function runFSM() {
     });
   }
 
-  if (!(await fsmStep('q_idle', null, `<span class="s-state">q₀</span> → Memulai proses mesin`, toks, -1, done, -1, spd, runId))) return;
+  if (!(await fsmStep('q_idle', null, `<span class="s-state">q₀</span> → Memulai proses mesin`, toks, -1, done, -1, spd, runId, 'tr-start'))) return;
 
   for (let i = 0; i < toks.length; i++) {
     if (!isRun || runId !== currentRunId) break;
     const t = toks[i], isSpc = t === ' ' || t === '␣';
 
-    if (!(await fsmStep('q_read', null, `<span class="s-state">q₁</span> → Membaca simbol: <span class="s-input">${t}</span>`, toks, i, done, -1, spd, runId))) break;
+    if (!(await fsmStep('q_read', null, `<span class="s-state">q₁</span> → Membaca simbol: <span class="s-input">${t}</span>`, toks, i, done, -1, spd, runId, i > 0 ? 'tr-next' : 'tr-start'))) break;
 
     if (isSpc) {
       out += mode === 'enc' ? ' / ' : ' ';
       el('main-output').textContent = out.trim() || out;
       done.add(i);
-      if (!(await fsmStep('q_output', null, `<span class="s-state">q₃</span> → Mencetak jeda kata: <span class="s-output">[spasi]</span>`, toks, -1, done, -1, spd, runId))) break;
+      if (!(await fsmStep('q_output', null, `<span class="s-state">q₃</span> → Mencetak jeda kata: <span class="s-output">[spasi]</span>`, toks, -1, done, -1, spd, runId, 'tr-read-spc'))) break;
       continue;
     }
 
     const res = mode === 'enc' ? MORSE_TABLE[t] : MORSE_REV[t];
-    if (!(await fsmStep('q_lookup', null, `<span class="s-state">q₂</span> → Diterjemahkan menjadi: <span class="s-input">${res || '?'}</span>`, toks, i, done, -1, spd, runId))) break;
+    if (!(await fsmStep('q_lookup', null, `<span class="s-state">q₂</span> → Diterjemahkan menjadi: <span class="s-input">${res || '?'}</span>`, toks, i, done, -1, spd, runId, 'tr-read-sym'))) break;
 
     if (!res) {
-      await fsmStep(null, 'q_reject', `<span class="s-err">✗ q_rej → Simbol tidak dikenal! Proses ditolak.</span>`, toks, -1, done, i, spd, runId);
+      await fsmStep(null, 'q_reject', `<span class="s-err">✗ q_rej → Simbol tidak dikenal! Proses ditolak.</span>`, toks, -1, done, i, spd, runId, 'tr-lookup-rej');
       isRun = false;
       break;
     }
@@ -100,11 +122,11 @@ async function runFSM() {
     out += res;
     el('main-output').textContent = out.trim();
     done.add(i);
-    if (!(await fsmStep('q_output', null, `<span class="s-state">q₃</span> → Mencetak hasil: <span class="s-output">${res}</span>`, toks, -1, done, -1, spd, runId))) break;
+    if (!(await fsmStep('q_output', null, `<span class="s-state">q₃</span> → Mencetak hasil: <span class="s-output">${res}</span>`, toks, -1, done, -1, spd, runId, 'tr-lookup-found'))) break;
   }
 
   if (isRun && runId === currentRunId) {
-    await fsmStep('q_accept', null, `<span class="s-state">q_acc</span> → ✓ Translasi selesai (diterima)`, toks, -1, done, -1, 0, runId);
+    await fsmStep('q_accept', null, `<span class="s-state">q_acc</span> → ✓ Translasi selesai (diterima)`, toks, -1, done, -1, 0, runId, 'tr-accept');
   }
 
   if (runId === currentRunId) {

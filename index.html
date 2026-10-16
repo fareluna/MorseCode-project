@@ -119,6 +119,83 @@
           <div class="log-container" id="main-log"><span class="s-state">Siap.</span></div>
         </div>
       </div>
+
+      <div class="card" id="formal-tbo-card">
+        <div class="card-header-toggle" onclick="toggleTBOSection()">
+          <h3>Spesifikasi Formal FSM (5-Tuple &amp; Tabel Transisi δ)</h3>
+          <span id="tbo-toggle-icon">▼</span>
+        </div>
+        <div id="tbo-content">
+          <div class="tuple-box">
+            <h4>Definisi Formal 5-Tuple: <code>M = (Q, Σ, δ, q₀, F)</code></h4>
+            <div class="tuple-list">
+              <div><strong>Q (Himpunan State):</strong> <code>{q₀, q₁, q₂, q₃, q_acc, q_rej}</code></div>
+              <div><strong>Σ (Alfabet Input):</strong> <code id="lbl-sigma">{A-Z, 0-9, Simbol, Spasi}</code></div>
+              <div><strong>q₀ (Initial State):</strong> <code>q₀ (Idle)</code></div>
+              <div><strong>F (Accepting State):</strong> <code>{q_acc}</code></div>
+              <div><strong>δ (Fungsi Transisi):</strong> <code>Q × Σ → Q</code></div>
+            </div>
+          </div>
+
+          <h4 style="margin: 15px 0 10px; font-size: 14px;">Tabel Transisi State (δ)</h4>
+          <div class="table-wrap">
+            <table class="transition-table" id="trans-table">
+              <thead>
+                <tr>
+                  <th>Current State (q)</th>
+                  <th>Kondisi / Input (σ)</th>
+                  <th>Next State δ(q, σ)</th>
+                  <th>Output / Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr id="tr-start">
+                  <td><code>q₀ (Idle)</code></td>
+                  <td>Start execution</td>
+                  <td><code>q₁ (Read)</code></td>
+                  <td>Inisialisasi tape &amp; head pembaca</td>
+                </tr>
+                <tr id="tr-read-sym">
+                  <td><code>q₁ (Read)</code></td>
+                  <td>Simbol karakter valid</td>
+                  <td><code>q₂ (Lookup)</code></td>
+                  <td>Baca simbol aktif pada tape input</td>
+                </tr>
+                <tr id="tr-read-spc">
+                  <td><code>q₁ (Read)</code></td>
+                  <td>Spasi / Delimiter kata</td>
+                  <td><code>q₃ (Output)</code></td>
+                  <td>Cetak pemisah kata (<code>/</code> atau spasi)</td>
+                </tr>
+                <tr id="tr-lookup-found">
+                  <td><code>q₂ (Lookup)</code></td>
+                  <td>Simbol terdaftar di kamus</td>
+                  <td><code>q₃ (Output)</code></td>
+                  <td>Konversi berhasil, siapkan output token</td>
+                </tr>
+                <tr id="tr-lookup-rej">
+                  <td><code>q₂ (Lookup)</code></td>
+                  <td>Simbol tidak dikenal</td>
+                  <td><code>q_rej (Reject)</code></td>
+                  <td>Mesin ditolak, hentikan proses (Error)</td>
+                </tr>
+                <tr id="tr-next">
+                  <td><code>q₃ (Output)</code></td>
+                  <td>Masih ada simbol berikutnya</td>
+                  <td><code>q₁ (Read)</code></td>
+                  <td>Cetak hasil ke output, geser head pembaca</td>
+                </tr>
+                <tr id="tr-accept">
+                  <td><code>q₃ (Output)</code></td>
+                  <td>Akhir input (EOF / ε)</td>
+                  <td><code>q_acc (Accept)</code></td>
+                  <td>String sukses diterima sepenuhnya</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </main>
   </div>
 
