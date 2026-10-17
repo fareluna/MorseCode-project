@@ -4,126 +4,206 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Morse FSM Translator</title>
+  <title>Morse FSM Translator — Teori Bahasa &amp; Otomata</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
   <div class="app">
-    <header class="header">
-      <h1>Morse Code Translator</h1>
-      <p style="color:var(--text-2); font-size:14px;">Finite State Machine</p>
+    <header class="app-header">
+      <div class="header-badge">
+        <span class="badge-dot"></span>
+        <span>Simulasi Otomata • Teori Bahasa &amp; Otomata</span>
+      </div>
+      <h1 class="app-title">Morse Code FSM Transducer</h1>
+      <p class="app-subtitle">Visualisasi Finite State Machine &amp; Model Pita Translasi Kode Morse</p>
     </header>
 
-    <nav class="tab-nav">
-      <button class="tab-btn active" data-mode="enc">Text → Morse</button>
-      <button class="tab-btn" data-mode="dec">Morse → Text</button>
-    </nav>
+    <div class="segmented-control">
+      <button class="tab-btn active" data-mode="enc">
+        <span class="tab-icon">🔤</span> Teks → Morse
+      </button>
+      <button class="tab-btn" data-mode="dec">
+        <span class="tab-icon">📻</span> Morse → Teks
+      </button>
+    </div>
 
-    <main>
-      <div class="card">
-        <h3 id="mode-title">Input Teks</h3>
-        <div class="input-row">
-          <input type="text" class="text-input" id="main-input" placeholder="Ketik teks (A-Z, 0-9)" autocomplete="off">
-        </div>
-        <div class="controls-row">
-          <div>
-            <label for="main-speed" style="font-size:14px;">Kecepatan:</label>
-            <input type="range" id="main-speed" min="100" max="900" value="400" step="50">
-            <span id="speed-lbl" style="font-size:14px;">400ms</span>
+    <main class="main-layout">
+      <!-- Input & Controls Card -->
+      <section class="card console-card">
+        <div class="card-head">
+          <div class="head-left">
+            <span class="head-label">INPUT TAPE</span>
+            <h3 id="mode-title">Input Teks</h3>
           </div>
-          <div>
-            <button class="btn btn-primary" id="btn-run">▶ Run FSM</button>
-            <button class="btn btn-outline" onclick="reset()">↺ Reset</button>
+          <span class="format-hint" id="lbl-char">char</span>
+        </div>
+
+        <div class="input-group">
+          <input type="text" class="text-input" id="main-input" placeholder="Ketik teks (A-Z, 0-9)" autocomplete="off" spellcheck="false">
+        </div>
+
+        <div class="preset-row">
+          <span class="preset-label">Contoh Cepat:</span>
+          <div class="preset-chips">
+            <button class="preset-chip" type="button" onclick="loadSample('SOS')">SOS</button>
+            <button class="preset-chip" type="button" onclick="loadSample('HELLO')">HELLO WORLD</button>
+            <button class="preset-chip" type="button" onclick="loadSample('TBO')">TBO 2026</button>
+            <button class="preset-chip" type="button" onclick="loadSample('AUTOMATA')">AUTOMATA</button>
           </div>
         </div>
-      </div>
 
-      <div class="card">
-        <h3>Diagram FSM</h3>
-        <svg id="fsm-svg" viewBox="0 0 780 270" class="fsm-svg">
-          <defs>
-            <marker id="arrow" viewBox="0 0 10 10" refX="22" refY="5" markerWidth="6" markerHeight="6"
-              orient="auto-start-reverse">
-              <path d="M0 2 L10 5 L0 8 z" fill="var(--border)" />
-            </marker>
-          </defs>
-          <line x1="85" y1="110" x2="230" y2="110" stroke="var(--border)" stroke-width="1.5" marker-end="url(#arrow)" />
-          <line x1="230" y1="110" x2="385" y2="110" stroke="var(--border)" stroke-width="1.5"
-            marker-end="url(#arrow)" />
-          <line x1="385" y1="110" x2="540" y2="110" stroke="var(--border)" stroke-width="1.5"
-            marker-end="url(#arrow)" />
-          <line x1="540" y1="110" x2="690" y2="110" stroke="var(--border)" stroke-width="1.5"
-            marker-end="url(#arrow)" />
-          <path d="M 540 82 Q 385 20 230 82" fill="none" stroke="var(--border)" stroke-width="1.5"
-            marker-end="url(#arrow)" />
-          <line x1="385" y1="110" x2="385" y2="230" stroke="var(--border)" stroke-width="1.5"
-            marker-end="url(#arrow)" />
+        <div class="toolbar-row">
+          <div class="speed-control">
+            <span class="control-label">Kecepatan:</span>
+            <input type="range" class="range-slider" id="main-speed" min="100" max="900" value="400" step="50">
+            <span class="speed-badge" id="speed-lbl">400ms</span>
+          </div>
+          <div class="action-buttons">
+            <button class="btn btn-outline" onclick="reset()">↺ Reset <kbd class="kbd-hint">Esc</kbd></button>
+            <button class="btn btn-primary" id="btn-run">▶ Jalankan Mesin <kbd class="kbd-hint">↵</kbd></button>
+          </div>
+        </div>
+      </section>
 
-          <text x="157" y="100" class="t-lbl">start</text>
-          <text x="307" y="100" class="t-lbl" id="lbl-char">char</text>
-          <text x="462" y="100" class="t-lbl">found</text>
-          <text x="615" y="100" class="t-lbl">end</text>
-          <text x="385" y="45" class="t-lbl">next</text>
-          <text x="395" y="175" class="t-lbl">invalid</text>
+      <!-- Visualizer Card: Diagram & Tape -->
+      <section class="card visualizer-card">
+        <div class="card-head">
+          <div class="head-left">
+            <span class="head-label">AUTOMATA GRAPH</span>
+            <h3>Diagram State Mesin (FSM)</h3>
+          </div>
+          <div class="graph-legend">
+            <span class="legend-item"><span class="legend-dot dot-idle"></span> q₀: Idle</span>
+            <span class="legend-item"><span class="legend-dot dot-active"></span> Aktif</span>
+            <span class="legend-item"><span class="legend-dot dot-accept"></span> Terima</span>
+            <span class="legend-item"><span class="legend-dot dot-reject"></span> Tolak</span>
+          </div>
+        </div>
 
-          <g class="state-node" id="q_idle">
-            <circle cx="85" cy="110" r="28" />
-            <text x="85" y="107" class="s-name">q₀</text>
-            <text x="85" y="122" class="s-desc">Idle</text>
-          </g>
-          <g class="state-node" id="q_read">
-            <circle cx="230" cy="110" r="28" />
-            <text x="230" y="107" class="s-name">q₁</text>
-            <text x="230" y="122" class="s-desc">Read</text>
-          </g>
-          <g class="state-node" id="q_lookup">
-            <circle cx="385" cy="110" r="28" />
-            <text x="385" y="107" class="s-name">q₂</text>
-            <text x="385" y="122" class="s-desc">Lookup</text>
-          </g>
-          <g class="state-node" id="q_output">
-            <circle cx="540" cy="110" r="28" />
-            <text x="540" y="107" class="s-name">q₃</text>
-            <text x="540" y="122" class="s-desc" id="lbl-emit">Output</text>
-          </g>
-          <g class="state-node" id="q_accept">
-            <circle cx="690" cy="110" r="28" />
-            <circle cx="690" cy="110" r="23" class="inner-circle" />
-            <text x="690" y="107" class="s-name">q_acc</text>
-            <text x="690" y="122" class="s-desc">Accept</text>
-          </g>
-          <g class="state-node" id="q_reject">
-            <circle cx="385" cy="230" r="28" stroke-dasharray="4 3" />
-            <text x="385" y="227" class="s-name">q_rej</text>
-            <text x="385" y="242" class="s-desc">Reject</text>
-          </g>
-        </svg>
-      </div>
+        <!-- HUD Telemetry Bar -->
+        <div class="hud-bar">
+          <div class="hud-item">
+            <span class="hud-label">STATE SAAT INI</span>
+            <span class="hud-value" id="hud-state"><span class="hud-led led-idle"></span> q₀ (Idle)</span>
+          </div>
+          <div class="hud-item">
+            <span class="hud-label">SIMBOL AKTIF</span>
+            <span class="hud-value mono" id="hud-token">—</span>
+          </div>
+          <div class="hud-item">
+            <span class="hud-label">PROGRES PITA</span>
+            <span class="hud-value mono" id="hud-progress">0 / 0</span>
+          </div>
+          <div class="hud-item hud-sound">
+            <button class="btn-audio" id="btn-audio" type="button" onclick="toggleAudio()">
+              <span id="audio-icon">🔊</span> <span id="audio-lbl">Audio ON</span>
+            </button>
+          </div>
+        </div>
 
-      <div class="card">
-        <h3>Tape Memory</h3>
-        <div class="tape-wrap" id="main-tape"></div>
-      </div>
+        <div class="svg-container">
+          <svg id="fsm-svg" viewBox="0 0 780 270" class="fsm-svg">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="22" refY="5" markerWidth="6" markerHeight="6"
+                orient="auto-start-reverse">
+                <path d="M0 2 L10 5 L0 8 z" fill="var(--border)" />
+              </marker>
+            </defs>
+            <line x1="85" y1="110" x2="230" y2="110" stroke="var(--border)" stroke-width="1.5" marker-end="url(#arrow)" />
+            <line x1="230" y1="110" x2="385" y2="110" stroke="var(--border)" stroke-width="1.5"
+              marker-end="url(#arrow)" />
+            <line x1="385" y1="110" x2="540" y2="110" stroke="var(--border)" stroke-width="1.5"
+              marker-end="url(#arrow)" />
+            <line x1="540" y1="110" x2="690" y2="110" stroke="var(--border)" stroke-width="1.5"
+              marker-end="url(#arrow)" />
+            <path d="M 540 82 Q 385 20 230 82" fill="none" stroke="var(--border)" stroke-width="1.5"
+              marker-end="url(#arrow)" />
+            <line x1="385" y1="110" x2="385" y2="230" stroke="var(--border)" stroke-width="1.5"
+              marker-end="url(#arrow)" />
 
+            <text x="157" y="100" class="t-lbl">start</text>
+            <text x="307" y="100" class="t-lbl" id="lbl-char">char</text>
+            <text x="462" y="100" class="t-lbl">found</text>
+            <text x="615" y="100" class="t-lbl">end</text>
+            <text x="385" y="45" class="t-lbl">next</text>
+            <text x="395" y="175" class="t-lbl">invalid</text>
+
+            <g class="state-node" id="q_idle">
+              <circle cx="85" cy="110" r="28" />
+              <text x="85" y="107" class="s-name">q₀</text>
+              <text x="85" y="122" class="s-desc">Idle</text>
+            </g>
+            <g class="state-node" id="q_read">
+              <circle cx="230" cy="110" r="28" />
+              <text x="230" y="107" class="s-name">q₁</text>
+              <text x="230" y="122" class="s-desc">Read</text>
+            </g>
+            <g class="state-node" id="q_lookup">
+              <circle cx="385" cy="110" r="28" />
+              <text x="385" y="107" class="s-name">q₂</text>
+              <text x="385" y="122" class="s-desc">Lookup</text>
+            </g>
+            <g class="state-node" id="q_output">
+              <circle cx="540" cy="110" r="28" />
+              <text x="540" y="107" class="s-name">q₃</text>
+              <text x="540" y="122" class="s-desc" id="lbl-emit">Output</text>
+            </g>
+            <g class="state-node" id="q_accept">
+              <circle cx="690" cy="110" r="28" />
+              <circle cx="690" cy="110" r="23" class="inner-circle" />
+              <text x="690" y="107" class="s-name">q_acc</text>
+              <text x="690" y="122" class="s-desc">Accept</text>
+            </g>
+            <g class="state-node" id="q_reject">
+              <circle cx="385" cy="230" r="28" stroke-dasharray="4 3" />
+              <text x="385" y="227" class="s-name">q_rej</text>
+              <text x="385" y="242" class="s-desc">Reject</text>
+            </g>
+          </svg>
+        </div>
+
+        <div class="tape-container">
+          <div class="tape-header">
+            <span class="tape-title">Pita Memori Simbol (Input Tape)</span>
+            <span class="tape-hint">Simbol diproses per sel pita</span>
+          </div>
+          <div class="tape-wrap" id="main-tape"></div>
+        </div>
+      </section>
+
+      <!-- Dual Column: Output & Execution Log -->
       <div class="row-2col">
-        <div class="card">
-          <div class="output-header">
-            <h3 id="out-title">Output Morse</h3>
-            <button class="btn-copy" onclick="copyOut('main-output')">Copy</button>
+        <section class="card inspector-card">
+          <div class="card-head">
+            <div class="head-left">
+              <span class="head-label">OUTPUT TAPE</span>
+              <h3 id="out-title">Output Morse</h3>
+            </div>
+            <button class="btn-copy" onclick="copyOut('main-output')">Salin Output</button>
           </div>
           <div class="output-box" id="main-output">—</div>
-        </div>
-        <div class="card">
-          <h3>Log Transisi</h3>
+        </section>
+
+        <section class="card inspector-card">
+          <div class="card-head">
+            <div class="head-left">
+              <span class="head-label">EXECUTION LOG</span>
+              <h3>Log Transisi State</h3>
+            </div>
+            <span class="live-pill">Live Tracer</span>
+          </div>
           <div class="log-container" id="main-log"><span class="s-state">Siap.</span></div>
-        </div>
+        </section>
       </div>
 
-      <div class="card" id="formal-tbo-card">
+      <section class="card tbo-card" id="formal-tbo-card">
         <div class="card-header-toggle" onclick="toggleTBOSection()">
-          <h3>Spesifikasi Formal FSM (5-Tuple &amp; Tabel Transisi δ)</h3>
-          <span id="tbo-toggle-icon">▼</span>
+          <div class="head-left">
+            <span class="head-label">TEORI FORMAL TBO</span>
+            <h3>Spesifikasi Mesin (5-Tuple &amp; Tabel Transisi δ)</h3>
+          </div>
+          <span class="toggle-pill" id="tbo-toggle-icon">Tutup ▼</span>
         </div>
         <div id="tbo-content">
           <div class="tuple-box">
@@ -195,7 +275,7 @@
             </table>
           </div>
         </div>
-      </div>
+      </section>
     </main>
   </div>
 
