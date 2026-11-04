@@ -1,5 +1,8 @@
 const el = id => document.getElementById(id);
 const delay = ms => new Promise(r => setTimeout(r, ms));
+// user-derived text must pass through esc() before reaching innerHTML
+const esc = s => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const REDUCE_MOTION = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 let isRun = false, mode = 'enc', currentRunId = 0;
 
 // ================= Audio Engine (Web Audio API) =================
@@ -46,10 +49,10 @@ function playBeep(freq = 720, durationMs = 70) {
   } catch (e) {}
 }
 
-async function playMorseTone(code) {
+async function playMorseTone(code, runId = currentRunId) {
   if (!soundEnabled || !code) return;
   for (const c of code) {
-    if (!isRun) break;
+    if (!isRun || runId !== currentRunId) break;
     if (c === '.') {
       playBeep(750, 60);
       await delay(80);
@@ -109,6 +112,7 @@ function setMode(m) {
   el('mode-title').textContent = m === 'enc' ? 'Input Teks' : 'Input Kode Morse';
   el('out-title').textContent = m === 'enc' ? 'Output Morse' : 'Output Teks';
   el('lbl-char').textContent = m === 'enc' ? 'char' : 'token';
+  el('lbl-char-svg')?.textContent = m === 'enc' ? 'char' : 'token';
   el('lbl-emit').textContent = m === 'enc' ? 'Output' : 'Emit';
   if (el('lbl-sigma')) {
     el('lbl-sigma').textContent = m === 'enc' ? '{A-Z, 0-9, Simbol, Spasi}' : '{·, -, /, Spasi}';
@@ -168,16 +172,31 @@ async function fsmStep(s, err, msg, toks, aIdx, dSet, eIdx, spd, runId, trRowId)
   updateHUD(stateKey, sLabelMap[stateKey] || stateKey, token, prog, Boolean(err));
 
   if (toks && el('main-tape')) {
-    el('main-tape').innerHTML = toks.map((t, i) => 
-      `<div class="tape-cell ${i===aIdx?'active':i===eIdx?'error':dSet.has(i)?'done':''}">
-        <span class="cell-idx">${i}</span>
-        <span class="cell-val">${t===' '?'␣':t}</span>
-      </div>`
-    ).join('');
+    const tape = el('main-tape');
+    tape.innerHTML = '';
+    toks.forEach((t, i) => {
+      const cell = document.createElement('div');
+      cell.className = 'tape-cell';
+      if (i === aIdx) cell.classList.add('active');
+      if (i === eIdx) cell.classList.add('error');
+      if (dSet.has(i)) cell.classList.add('done');
+      
+      const idx = document.createElement('span');
+      idx.className = 'cell-idx';
+      idx.textContent = i;
+      
+      const val = document.createElement('span');
+      val.className = 'cell-val';
+      val.textContent = t === ' ' ? '␣' : t;
+      
+      cell.appendChild(idx);
+      cell.appendChild(val);
+      tape.appendChild(cell);
+    });
 
     const activeCell = el('main-tape').querySelector('.tape-cell.active, .tape-cell.error');
     if (activeCell) {
-      activeCell.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      activeCell.scrollIntoView({ behavior: REDUCE_MOTION ? 'auto' : 'smooth', inline: 'center', block: 'nearest' });
     }
   }
 
@@ -226,7 +245,7 @@ async function runFSM() {
     if (!isRun || runId !== currentRunId) break;
     const t = toks[i], isSpc = t === ' ' || t === '␣';
 
-    if (!(await fsmStep('q_read', null, `<span class="s-state">q₁</span> → Membaca simbol pita: <span class="s-input">${t}</span>`, toks, i, done, -1, spd, runId, i > 0 ? 'tr-next' : 'tr-start'))) break;
+    if (!(await fsmStep('q_read', null, `<span class="s-state">q₁</span> → Membaca simbol pita: <span class="s-input">${esc(t)}</span>`, toks, i, done, -1, spd, runId, i > 0 ? 'tr-next' : 'tr-start'))) break;
 
     if (isSpc) {
       out += mode === 'enc' ? ' / ' : ' ';
@@ -242,7 +261,7 @@ async function runFSM() {
 
     if (!res) {
       playBeep(320, 220);
-      await fsmStep(null, 'q_reject', `<span class="s-err">✗ q_rej → Simbol tidak dikenal! Proses ditolak.</span>`, toks, -1, done, i, spd, runId, 'tr-lookup-rej');
+      if (!(await fsmStep(null, 'q_reject', `<span class="s-err">✗ q_rej → Simbol tidak dikenal! Proses ditolak.</span>`, toks, -1, done, i, spd, runId, 'tr-lookup-rej'))) return;
       isRun = false;
       break;
     }
@@ -253,11 +272,8 @@ async function runFSM() {
     done.add(i);
 
     // Audio cue: play morse sound
-    if (mode === 'enc') {
-      playMorseTone(res);
-    } else {
-      playMorseTone(t);
-    }
+    await playMorseTone(mode === 'enc' ? res : t, runId);
+    if (!isRun || runId !== currentRunId) break;
 
     if (!(await fsmStep('q_output', null, `<span class="s-state">q₃</span> → Mencetak hasil: <span class="s-output">${res}</span>`, toks, -1, done, -1, spd, runId, 'tr-lookup-found'))) break;
   }
