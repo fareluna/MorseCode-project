@@ -107,12 +107,18 @@ function loadSample(key) {
 function setMode(m) {
   if (isRun) reset();
   mode = m;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    const isActive = b.dataset.mode === m;
+    b.classList.toggle('active', isActive);
+    b.setAttribute('aria-pressed', String(isActive));
+  });
   el('main-input').placeholder = m === 'enc' ? 'Ketik teks (A-Z, 0-9)' : 'Contoh: .... . .-.. .-.. --- / .-- --- .-. .-.. -..';
+  el('main-input').setAttribute('aria-label', m === 'enc' ? 'Input teks untuk diubah ke Morse' : 'Input kode Morse untuk diubah ke teks');
   el('mode-title').textContent = m === 'enc' ? 'Input Teks' : 'Input Kode Morse';
   el('out-title').textContent = m === 'enc' ? 'Output Morse' : 'Output Teks';
   el('lbl-char').textContent = m === 'enc' ? 'char' : 'token';
-  el('lbl-char-svg')?.textContent = m === 'enc' ? 'char' : 'token';
+  const svgLbl = el('lbl-char-svg');
+  if (svgLbl) svgLbl.textContent = m === 'enc' ? 'char' : 'token';
   el('lbl-emit').textContent = m === 'enc' ? 'Output' : 'Emit';
   if (el('lbl-sigma')) {
     el('lbl-sigma').textContent = m === 'enc' ? '{A-Z, 0-9, Simbol, Spasi}' : '{·, -, /, Spasi}';
@@ -120,11 +126,11 @@ function setMode(m) {
   reset();
 }
 
-function reset() {
+function reset(clearInput = false) {
   currentRunId++;
   isRun = false;
   if (el('btn-run')) el('btn-run').disabled = false;
-  if (el('main-input')) el('main-input').value = '';
+  if (clearInput && el('main-input')) el('main-input').value = '';
   document.querySelectorAll('.state-node').forEach(g => g.classList.remove('active', 'error'));
   el('q_idle')?.classList.add('active');
   highlightTransition(null);
@@ -149,6 +155,8 @@ function toggleTBOSection() {
   const isHidden = content.style.display === 'none';
   content.style.display = isHidden ? 'block' : 'none';
   if (icon) icon.textContent = isHidden ? 'Tutup ▼' : 'Buka ▶';
+  const toggle = el('tbo-toggle');
+  if (toggle) toggle.setAttribute('aria-expanded', String(isHidden));
 }
 
 async function fsmStep(s, err, msg, toks, aIdx, dSet, eIdx, spd, runId, trRowId) {
@@ -173,28 +181,33 @@ async function fsmStep(s, err, msg, toks, aIdx, dSet, eIdx, spd, runId, trRowId)
 
   if (toks && el('main-tape')) {
     const tape = el('main-tape');
-    tape.innerHTML = '';
-    toks.forEach((t, i) => {
-      const cell = document.createElement('div');
-      cell.className = 'tape-cell';
-      if (i === aIdx) cell.classList.add('active');
-      if (i === eIdx) cell.classList.add('error');
-      if (dSet.has(i)) cell.classList.add('done');
-      
-      const idx = document.createElement('span');
-      idx.className = 'cell-idx';
-      idx.textContent = i;
-      
-      const val = document.createElement('span');
-      val.className = 'cell-val';
-      val.textContent = t === ' ' ? '␣' : t;
-      
-      cell.appendChild(idx);
-      cell.appendChild(val);
-      tape.appendChild(cell);
+    if (tape.children.length !== toks.length) {
+      tape.innerHTML = '';
+      toks.forEach((t, i) => {
+        const cell = document.createElement('div');
+        cell.className = 'tape-cell';
+
+        const idx = document.createElement('span');
+        idx.className = 'cell-idx';
+        idx.textContent = i;
+
+        const val = document.createElement('span');
+        val.className = 'cell-val';
+        val.textContent = t === ' ' ? '␣' : t;
+
+        cell.appendChild(idx);
+        cell.appendChild(val);
+        tape.appendChild(cell);
+      });
+    }
+
+    Array.from(tape.children).forEach((cell, i) => {
+      cell.classList.toggle('active', i === aIdx);
+      cell.classList.toggle('error', i === eIdx);
+      cell.classList.toggle('done', dSet.has(i));
     });
 
-    const activeCell = el('main-tape').querySelector('.tape-cell.active, .tape-cell.error');
+    const activeCell = tape.querySelector('.tape-cell.active, .tape-cell.error');
     if (activeCell) {
       activeCell.scrollIntoView({ behavior: REDUCE_MOTION ? 'auto' : 'smooth', inline: 'center', block: 'nearest' });
     }
@@ -329,9 +342,19 @@ function fallbackCopy(text, cb) {
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.tab-btn').forEach(b => b.onclick = () => setMode(b.dataset.mode));
   el('main-speed')?.addEventListener('input', e => el('speed-lbl').textContent = e.target.value + 'ms');
+  el('tbo-toggle')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleTBOSection();
+    }
+  });
   el('btn-run').onclick = runFSM;
   document.onkeydown = e => {
-    if (e.key === 'Enter' && !e.shiftKey) runFSM();
+    const active = document.activeElement;
+    if (e.key === 'Enter' && !e.shiftKey && active === el('main-input')) {
+      e.preventDefault();
+      runFSM();
+    }
     if (e.key === 'Escape') reset();
   };
   reset();
