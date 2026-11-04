@@ -20,11 +20,11 @@
     </header>
 
     <div class="segmented-control">
-      <button class="tab-btn active" data-mode="enc">
-        <span class="tab-icon">🔤</span> Teks → Morse
+      <button class="tab-btn active" data-mode="enc" aria-pressed="true">
+        <span class="tab-icon" aria-hidden="true">🔤</span> Teks → Morse
       </button>
-      <button class="tab-btn" data-mode="dec">
-        <span class="tab-icon">📻</span> Morse → Teks
+      <button class="tab-btn" data-mode="dec" aria-pressed="false">
+        <span class="tab-icon" aria-hidden="true">📻</span> Morse → Teks
       </button>
     </div>
 
@@ -40,7 +40,7 @@
         </div>
 
         <div class="input-group">
-          <input type="text" class="text-input" id="main-input" placeholder="Ketik teks (A-Z, 0-9)" autocomplete="off" spellcheck="false">
+          <input type="text" class="text-input" id="main-input" placeholder="Ketik teks (A-Z, 0-9)" autocomplete="off" spellcheck="false" aria-label="Input teks untuk diubah ke Morse">
         </div>
 
         <div class="preset-row">
@@ -56,11 +56,11 @@
         <div class="toolbar-row">
           <div class="speed-control">
             <span class="control-label">Kecepatan:</span>
-            <input type="range" class="range-slider" id="main-speed" min="100" max="900" value="400" step="50">
+            <input type="range" class="range-slider" id="main-speed" min="100" max="900" value="400" step="50" aria-label="Kecepatan animasi mesin">
             <span class="speed-badge" id="speed-lbl">400ms</span>
           </div>
           <div class="action-buttons">
-            <button class="btn btn-outline" onclick="reset()">↺ Reset <kbd class="kbd-hint">Esc</kbd></button>
+            <button class="btn btn-outline" onclick="reset()">↺ Reset Mesin <kbd class="kbd-hint">Esc</kbd></button>
             <button class="btn btn-primary" id="btn-run">▶ Jalankan Mesin <kbd class="kbd-hint">↵</kbd></button>
           </div>
         </div>
@@ -97,7 +97,7 @@
           </div>
           <div class="hud-item hud-sound">
             <button class="btn-audio" id="btn-audio" type="button" onclick="toggleAudio()">
-              <span id="audio-icon">🔊</span> <span id="audio-lbl">Audio ON</span>
+              <span id="audio-icon" aria-hidden="true">🔊</span> <span id="audio-lbl">Audio ON</span>
             </button>
           </div>
         </div>
@@ -198,7 +198,7 @@
       </div>
 
       <section class="card tbo-card" id="formal-tbo-card">
-        <div class="card-header-toggle" onclick="toggleTBOSection()">
+        <div class="card-header-toggle" id="tbo-toggle" role="button" tabindex="0" aria-controls="tbo-content" aria-expanded="true" onclick="toggleTBOSection()">
           <div class="head-left">
             <span class="head-label">TEORI FORMAL TBO</span>
             <h2>Spesifikasi Mesin (5-Tuple &amp; Tabel Transisi δ)</h2>
