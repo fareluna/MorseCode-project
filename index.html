@@ -5,16 +5,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Morse FSM Translator — Teori Bahasa &amp; Otomata</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
   <div class="app">
     <header class="app-header">
-      <div class="header-badge">
-        <span class="badge-dot"></span>
-        <span>Simulasi Otomata • Teori Bahasa &amp; Otomata</span>
-      </div>
+      <p class="app-kicker">LABORATORIUM TEORI BAHASA &amp; OTOMATA</p>
       <h1 class="app-title">Morse Code FSM Transducer</h1>
       <p class="app-subtitle">Visualisasi Finite State Machine &amp; Model Pita Translasi Kode Morse</p>
     </header>
@@ -31,17 +31,14 @@
     <main class="main-layout">
       <!-- Input & Controls Card -->
       <section class="card console-card">
-        <div class="card-head">
+        <header class="card-head">
           <div class="head-left">
-            <span class="head-label">INPUT TAPE</span>
             <h2 id="mode-title">Input Teks</h2>
           </div>
           <span class="format-hint" id="lbl-char">char</span>
-        </div>
+        </header>
 
-        <div class="input-group">
-          <input type="text" class="text-input" id="main-input" placeholder="Ketik teks (A-Z, 0-9)" autocomplete="off" spellcheck="false" aria-label="Input teks untuk diubah ke Morse">
-        </div>
+        <input type="text" class="text-input" id="main-input" placeholder="Ketik teks (A-Z, 0-9)" autocomplete="off" spellcheck="false" aria-label="Input teks untuk diubah ke Morse">
 
         <div class="preset-row">
           <span class="preset-label">Contoh Cepat:</span>
@@ -68,9 +65,8 @@
 
       <!-- Visualizer Card: Diagram & Tape -->
       <section class="card visualizer-card">
-        <div class="card-head">
+        <header class="card-head">
           <div class="head-left">
-            <span class="head-label">AUTOMATA GRAPH</span>
             <h2>Diagram State Mesin (FSM)</h2>
           </div>
           <div class="graph-legend">
@@ -79,7 +75,7 @@
             <span class="legend-item"><span class="legend-dot dot-accept"></span> Terima</span>
             <span class="legend-item"><span class="legend-dot dot-reject"></span> Tolak</span>
           </div>
-        </div>
+        </header>
 
         <!-- HUD Telemetry Bar -->
         <div class="hud-bar">
@@ -175,46 +171,42 @@
       <!-- Dual Column: Output & Execution Log -->
       <div class="row-2col">
         <section class="card inspector-card">
-          <div class="card-head">
+          <header class="card-head">
             <div class="head-left">
-              <span class="head-label">OUTPUT TAPE</span>
               <h2 id="out-title">Output Morse</h2>
             </div>
             <button class="btn-copy" onclick="copyOut('main-output')">Salin Output</button>
-          </div>
-          <div class="output-box" id="main-output">—</div>
+          </header>
+          <output class="output-box" id="main-output">—</output>
         </section>
 
         <section class="card inspector-card">
-          <div class="card-head">
+          <header class="card-head">
             <div class="head-left">
-              <span class="head-label">EXECUTION LOG</span>
               <h2>Log Transisi State</h2>
             </div>
-            <span class="live-pill">Live Tracer</span>
-          </div>
+          </header>
           <div class="log-container" id="main-log"><span class="s-state">Siap.</span></div>
         </section>
       </div>
 
       <section class="card tbo-card" id="formal-tbo-card">
-        <div class="card-header-toggle" id="tbo-toggle" role="button" tabindex="0" aria-controls="tbo-content" aria-expanded="true" onclick="toggleTBOSection()">
+        <button type="button" class="card-header-toggle" id="tbo-toggle" aria-controls="tbo-content" aria-expanded="true" onclick="toggleTBOSection()">
           <div class="head-left">
-            <span class="head-label">TEORI FORMAL TBO</span>
             <h2>Spesifikasi Mesin (5-Tuple &amp; Tabel Transisi δ)</h2>
           </div>
           <span class="toggle-pill" id="tbo-toggle-icon">Tutup ▼</span>
-        </div>
+        </button>
         <div id="tbo-content">
           <div class="tuple-box">
             <h4>Definisi Formal 5-Tuple: <code>M = (Q, Σ, δ, q₀, F)</code></h4>
-            <div class="tuple-list">
-              <div><strong>Q (Himpunan State):</strong> <code>{q₀, q₁, q₂, q₃, q_acc, q_rej}</code></div>
-              <div><strong>Σ (Alfabet Input):</strong> <code id="lbl-sigma">{A-Z, 0-9, Simbol, Spasi}</code></div>
-              <div><strong>q₀ (Initial State):</strong> <code>q₀ (Idle)</code></div>
-              <div><strong>F (Accepting State):</strong> <code>{q_acc}</code></div>
-              <div><strong>δ (Fungsi Transisi):</strong> <code>Q × Σ → Q</code></div>
-            </div>
+            <dl class="tuple-list">
+              <div class="tuple-item"><dt>Q (Himpunan State):</dt> <dd><code>{q₀, q₁, q₂, q₃, q_acc, q_rej}</code></dd></div>
+              <div class="tuple-item"><dt>Σ (Alfabet Input):</dt> <dd><code id="lbl-sigma">{A-Z, 0-9, Simbol, Spasi}</code></dd></div>
+              <div class="tuple-item"><dt>q₀ (Initial State):</dt> <dd><code>q₀ (Idle)</code></dd></div>
+              <div class="tuple-item"><dt>F (Accepting State):</dt> <dd><code>{q_acc}</code></dd></div>
+              <div class="tuple-item"><dt>δ (Fungsi Transisi):</dt> <dd><code>Q × Σ → Q</code></dd></div>
+            </dl>
           </div>
 
           <h4 style="margin: 15px 0 10px; font-size: 14px;">Tabel Transisi State (δ)</h4>

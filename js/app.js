@@ -44,6 +44,12 @@ function playBeep(freq = 720, durationMs = 70) {
     gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + (durationMs / 1000));
     osc.connect(gain);
     gain.connect(ctx.destination);
+    osc.onended = () => {
+      try {
+        osc.disconnect();
+        gain.disconnect();
+      } catch (e) {}
+    };
     osc.start();
     osc.stop(ctx.currentTime + (durationMs / 1000));
   } catch (e) {}
@@ -252,6 +258,12 @@ async function runFSM() {
     });
   }
 
+  if (!toks.length) {
+    isRun = false;
+    if (el('btn-run')) el('btn-run').disabled = false;
+    return;
+  }
+
   if (!(await fsmStep('q_idle', null, `<span class="s-state">q₀</span> → Memulai mesin transduser`, toks, -1, done, -1, spd, runId, 'tr-start'))) return;
 
   for (let i = 0; i < toks.length; i++) {
@@ -342,12 +354,6 @@ function fallbackCopy(text, cb) {
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.tab-btn').forEach(b => b.onclick = () => setMode(b.dataset.mode));
   el('main-speed')?.addEventListener('input', e => el('speed-lbl').textContent = e.target.value + 'ms');
-  el('tbo-toggle')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      toggleTBOSection();
-    }
-  });
   el('btn-run').onclick = runFSM;
   document.onkeydown = e => {
     const active = document.activeElement;
